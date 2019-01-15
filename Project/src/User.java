@@ -24,7 +24,7 @@ public class User {
         portDownload = 6000 + id;
         totalSize = id;
 
-        Thread t = new UploadListener(portListen, directory);
+        Thread t = new UploadListener(this);
         t.start();
     }
 
@@ -32,8 +32,20 @@ public class User {
         return this.id;
     }
 
+    public int getPortListen(){
+        return portListen;
+    }
+
+    public String getDirectory(){
+        return directory;
+    }
+
     public double getTotalSize(){
         return totalSize;
+    }
+
+    public void addTotoalSize(double size){
+        totalSize += size;
     }
 
     public void upload(String fileName, int partitions) throws IOException{
@@ -128,10 +140,12 @@ class UploadListener extends Thread{
     private ServerSocket uploadListenerSocket;
     private int port;
     private String directory;
+    private User user;
 
-    public UploadListener(int port, String directory){
-        this.port = port;
-        this.directory = directory;
+    public UploadListener(User user){
+        this.user = user;
+        this.port = user.getPortListen();
+        this.directory = user.getDirectory();
     }
 
     public void run(){
@@ -152,9 +166,11 @@ class UploadListener extends Thread{
                     String fileName = request.split(" ")[1];
                     long fileSize = Long.parseLong(request.split(" ")[2]);
 
+                    user.addTotoalSize((double)fileSize);
 
                     System.out.println(port + ": fileSize = " + fileSize);
                     System.out.println(port + ": fileName = " + fileName);
+
 
                     in.close();
                     socketUp.close();
