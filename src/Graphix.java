@@ -1,4 +1,6 @@
 import javax.swing.*;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.*;
 
@@ -168,6 +170,7 @@ public class Graphix {
                     @Override
                     public void actionPerformed(ActionEvent actionEvent) {
                         System.out.println(newName.getText());
+                        dialog.dispose();
                     }
                 });
                 dialog.setSize(400,100);
@@ -176,6 +179,16 @@ public class Graphix {
             }
         });
         deleteButton = new JButton("Delete");
+        deleteButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                int dialogResult = JOptionPane.showConfirmDialog (null, "Are you sure you want to delete this file?","Warning",0);
+                if(dialogResult == JOptionPane.YES_OPTION){
+                    System.out.println("Yes is pressed");
+
+                }
+            }
+        });
         buttonsPanel = new JPanel(new FlowLayout());
         buttonsPanel.add(downloadButton);
         buttonsPanel.add(duplicateButton);
@@ -187,6 +200,13 @@ public class Graphix {
         String[] listOfFiles = new String[]{"Ubuntu.iso", "Movie.mp4"};
         filesList.setListData(listOfFiles);
         //filesList.add
+        filesList.addListSelectionListener(new ListSelectionListener() {
+            @Override
+            public void valueChanged(ListSelectionEvent listSelectionEvent) {
+                String selected = filesList.getSelectedValue().toString();
+                System.out.println(selected);
+            }
+        });
         listPanel.add(filesList);
         scrollBar1 = new JScrollBar();
         listPanel.add(scrollBar1, BorderLayout.WEST);
@@ -196,6 +216,12 @@ public class Graphix {
         fiRefresh = new JMenuItem("Refresh List");
         fileMenu.add(fiRefresh);
         fiExit = new JMenuItem("Exit Application");
+        fiExit.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                frame.dispose();
+            }
+        });
         fileMenu.add(fiExit);
 
         topMenu.add(fileMenu);
