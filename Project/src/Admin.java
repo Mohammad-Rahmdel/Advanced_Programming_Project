@@ -16,7 +16,7 @@ public class Admin{
     private static int redundancy = 2;
 
 
-    public Admin() throws IOException {
+    public Admin(){
         Thread t = new Server();
         t.start();
     }
@@ -42,6 +42,23 @@ public class Admin{
     }
 
 
+
+    public int hasAccess(int id, String name){
+        int status = 1; // Wrong file name
+        int foundId = -1;
+        for(String[] x : files){
+            if(x[1].equals(name)){
+                status = 2; // name ok. id doesn't have access
+                foundId = Integer.parseInt(x[2]);
+                break;
+            }
+        }
+        if(status == 2){ // if file name is ok
+            if(id == foundId)
+                status = 3; // this id has access
+        }
+        return status;
+    }
 
     public static String allocation(String path, int n) throws FileNotFoundException {
         String[] ss = path.split("/");
@@ -82,6 +99,67 @@ public class Admin{
         return users;
     }
 
+
+    public void delete(String fileName){
+        int y = 0;
+        String[] info = null;
+        for (String[] x: files){
+            if(x[1].equals(fileName)){
+                info = x;
+                files.remove(y);
+                System.out.println("removed from admin");
+                break;
+            }
+            y++;
+        }
+        String[] id_part = info[0].split(",");
+        int[] idFixed = new int[id_part.length];
+        int[] partFixed = new int[id_part.length];
+        for (int i = 0; i < id_part.length; i++){
+            idFixed[i] = Integer.parseInt(id_part[i].split(":")[1]);
+            partFixed[i] = Integer.parseInt(id_part[i].split(":")[0]);
+        }
+        for (int i = 0; i < id_part.length; i++){ // send delete command
+            try {
+                Socket socketTmp = new Socket("localhost", 4000 + idFixed[i]);
+                DataOutputStream outTmp = new DataOutputStream(socketTmp.getOutputStream());
+                String command = "delete " + (fileName + "." +  partFixed[i]);
+                outTmp.writeUTF(command);
+
+                socketTmp.close();
+                outTmp.close();
+            } catch (IOException e){}
+        }
+    }
+
+    public void rename(String fileName, String newName){
+        String[] info = null;
+        for (String[] x: files){
+            if(x[1].equals(fileName)){
+                info = x;
+                x[1] = newName;
+                break;
+            }
+        }
+        String[] id_part = info[0].split(",");
+        int[] idFixed = new int[id_part.length];
+        int[] partFixed = new int[id_part.length];
+        for (int i = 0; i < id_part.length; i++){
+            idFixed[i] = Integer.parseInt(id_part[i].split(":")[1]);
+            partFixed[i] = Integer.parseInt(id_part[i].split(":")[0]);
+        }
+        for (int i = 0; i < id_part.length; i++){ // send rename command
+            try {
+                Socket socketTmp = new Socket("localhost", 4000 + idFixed[i]);
+                DataOutputStream outTmp = new DataOutputStream(socketTmp.getOutputStream());
+                String command = "rename " + (fileName + "." +  partFixed[i]) + " " + newName;
+                outTmp.writeUTF(command);
+
+                socketTmp.close();
+                outTmp.close();
+            } catch (IOException e){}
+        }
+    }
 
 }
 

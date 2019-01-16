@@ -49,6 +49,40 @@ public class Run {
                 else
                     System.out.println("This ID doesn't exist");
             }
+            else if(input.startsWith("rename")){ // rename readme.txt 2
+                String fileName = input.split(" ")[1];
+                int id = Integer.parseInt(input.split(" ")[2]);
+                if(isValid(id)){
+                    int status = admin.hasAccess(id, fileName);
+                    if(status == 1)
+                        System.out.println("This file doesn't exist!");
+                    else if(status == 2)
+                        System.out.println("You cannot rename this file!");
+                    else {
+                        System.out.println("Enter the new name: ");
+                        input = scanner.nextLine();
+                        admin.rename(fileName, input);
+                    }
+                }
+                else
+                    System.out.println("This ID doesn't exist");
+            }
+            else if(input.startsWith("delete")){ // delete readme.txt 2
+                String fileName = input.split(" ")[1];
+                int id = Integer.parseInt(input.split(" ")[2]);
+                if(isValid(id)){
+                    int status = admin.hasAccess(id, fileName);
+                    if(status == 1)
+                        System.out.println("This file doesn't exist!");
+                    else if(status == 2)
+                        System.out.println("You cannot delete this file!");
+                    else {
+                        admin.delete(fileName);
+                    }
+                }
+                else
+                    System.out.println("This ID doesn't exist");
+            }
             else {
                 System.out.println("Invalid Input!");
             }

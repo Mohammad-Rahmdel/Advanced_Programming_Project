@@ -44,7 +44,7 @@ public class User {
         return totalSize;
     }
 
-    public void addTotoalSize(double size){
+    public void addTotolSize(double size){
         totalSize += size;
     }
 
@@ -69,9 +69,6 @@ public class User {
         allocationSocket.close();
 
         System.out.println("Allocation received = " + allocationFormat);
-
-        //TODO this part should send file to allocators -> portListen
-        // upload + filename001 + size -> 400X
 
         long fileSize = new File(filePath).length();
         long[] size = new long[partitions];
@@ -106,9 +103,6 @@ public class User {
             } catch (IOException e){}
         }
 
-
-        //TODO sending partitions
-
         File file = new File(directory + fileName);
         byte[] fileContent = null;
         try {
@@ -132,6 +126,8 @@ public class User {
         System.out.println("All files Sent");
 
     }
+
+
 
 }
 
@@ -166,7 +162,7 @@ class UploadListener extends Thread{
                     String fileName = request.split(" ")[1];
                     long fileSize = Long.parseLong(request.split(" ")[2]);
 
-                    user.addTotoalSize((double)fileSize);
+                    user.addTotolSize((double)fileSize);
 
                     System.out.println(port + ": fileSize = " + fileSize);
                     System.out.println(port + ": fileName = " + fileName);
@@ -184,6 +180,30 @@ class UploadListener extends Thread{
                     try (FileOutputStream fos = new FileOutputStream(directory + fileName)) {
                         fos.write(fileContent);
                     } catch (IOException e){}
+                }
+                else if(request.startsWith("delete")){ // delete
+                    String fileName = request.split(" ")[1];
+                    System.out.println(port + " delete request = " + request);
+                    System.out.println(port + ": " + directory + fileName);
+                    File f = new File(directory + fileName);
+                    double sizeDeletingFile = f.length();
+                    System.out.println(port + ": size = " + sizeDeletingFile);
+                    f.delete();
+                    System.out.println("Deleted successfully");
+                    user.addTotolSize(-sizeDeletingFile);
+                }
+                else if(request.startsWith("rename")){
+                    String fileName = request.split(" ")[1];
+                    System.out.println(port + " name = " + fileName);
+                    String[] split = fileName.split("\\.");
+
+                    String index = split[split.length - 1];
+
+                    String fileNewName = request.split(" ")[2];
+                    File file_old = new File(directory + fileName);
+                    File file_new = new File(directory + fileNewName + "." + index);
+                    file_old.renameTo(file_new);
+
                 }
             } catch (IOException e){}
 
