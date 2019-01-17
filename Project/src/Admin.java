@@ -33,6 +33,14 @@ public class Admin{
         users.add(user);
     }
 
+    public static boolean userExists(int id){
+        for (User u : users)
+            if (u.getId() == id)
+                return true;
+
+        return false;
+    }
+
     public User getUser(int id){
         for(User user : users)
             if (user.getId() == id)
@@ -41,6 +49,46 @@ public class Admin{
         return null;
     }
 
+    public boolean hasFile(String fileName){
+        for (String[] x : files){
+            if (x[1].equals(fileName))
+                return true;
+        }
+        return false;
+    }
+
+
+    public static String downloadManager(String fileName){
+        String allocation = "";
+        for(String[] x: files) {
+            if (x[1].equals(fileName))
+                allocation = x[0];
+        }
+        System.out.println("alloc = " + allocation);
+        String[] split = allocation.split(",");
+        int numberOfParts = split.length / redundancy;
+        int cnt = 0;
+        String downloadFormat = "";
+        System.out.println("N = " + numberOfParts);
+        for (int i = 1; i <= numberOfParts; i++){
+            boolean flag = true;
+            for (String y : split){
+                if ((flag) && Integer.parseInt(y.split(":")[0]) == i){ // part i.th not found yet
+                    if(userExists(Integer.parseInt(y.split(":")[1]))){
+                        downloadFormat += y + ",";
+                        cnt++;
+                        flag = false;
+                    }
+                }
+            }
+        }
+
+        downloadFormat = downloadFormat.substring(0,downloadFormat.length() - 1);
+        if (cnt == numberOfParts)
+            return "" + numberOfParts + "#" + downloadFormat;   // e.g. 3#1:2,2:3,3:5
+        else
+            return "failed";
+    }
 
 
     public int hasAccess(int id, String name){
@@ -88,7 +136,7 @@ public class Admin{
                 index++;
             }
         }
-        allocation = allocation.substring(0, allocation.length() - 1); // removing last ','
+        allocation = allocation.substring(0, allocation.length() - 1); // omitting last ','
         String[] info = {allocation, fileName, idUploader};
         files.add(info);
         return allocation;
@@ -201,6 +249,31 @@ class Server extends Thread{
                     out.writeUTF(allocation);
                     out.close();
 
+
+                }
+                else if(request.startsWith("download")){
+                    String fileName = request.split(" ")[1];
+                    int id = Integer.parseInt(request.split(" ")[2]);
+                    String answer = Admin.downloadManager(fileName);
+                    System.out.println("download answer = " + answer);
+                    Socket downloadResponse = new Socket("localhost", 12345);
+                    DataOutputStream out = new DataOutputStream(downloadResponse.getOutputStream());
+                    out.writeUTF(answer.split("#")[0]);
+                    out.close();
+
+                    String[] downloadFormat = (answer.split("#")[1]).split(",");
+                    for (int i = 0; i < downloadFormat.length; i++){ // informs peers to send the specific partition
+                        int peerId = Integer.parseInt(downloadFormat[i].split(":")[1]);
+                        int partNo = Integer.parseInt(downloadFormat[i].split(":")[0]);
+                        String message = "send " + id + " " + fileName +
+                                "." + partNo; // send to id partNo of fileName.partNo
+
+                        Socket sendInfo = new Socket("localhost", 4000 + peerId); // -> portListen
+                        DataOutputStream out2 = new DataOutputStream(sendInfo.getOutputStream());
+                        out2.writeUTF(message);
+                        out2.close();
+
+                    }
 
                 }
             } catch (IOException e){}

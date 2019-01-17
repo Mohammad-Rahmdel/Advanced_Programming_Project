@@ -3,6 +3,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.HashSet;
 
 public class User {
@@ -15,6 +16,7 @@ public class User {
     private double totalSize;
     private Socket client;
     private HashSet<String> files = new HashSet<>();
+
 
     public User(int id){
         this.id = id;
@@ -36,6 +38,8 @@ public class User {
         return portListen;
     }
 
+    public int getPortDownload() { return portDownload; }
+
     public String getDirectory(){
         return directory;
     }
@@ -44,7 +48,7 @@ public class User {
         return totalSize;
     }
 
-    public void addTotolSize(double size){
+    public void addTotalSize(double size){
         totalSize += size;
     }
 
@@ -120,6 +124,9 @@ public class User {
             System.out.println("len = " + len);
             outTmp.write(fileContent, (int)offset, len);
 
+
+
+
             socketTmp.close();
             outTmp.close();
         }
@@ -128,6 +135,95 @@ public class User {
     }
 
 
+    public void download(String fileName) throws IOException{
+        System.out.println("Downloading ...");
+        try {
+            client = new Socket("localhost", 8888);
+        } catch (UnknownHostException e){} catch (IOException e){}
+        System.out.println("User connected");
+
+        DataOutputStream out = new DataOutputStream(client.getOutputStream());
+        String request = "download " + fileName + " " + id;            //e.g. download readme.txt 3
+        out.writeUTF(request);
+
+        //receives how many parts it should receive
+        ServerSocket portSocket = new ServerSocket(12345);
+        Socket client = portSocket.accept();
+        DataInputStream in = new DataInputStream(client.getInputStream());
+        String answer = in.readUTF();
+        client.close();
+        portSocket.close();
+        out.close();
+
+        if(answer.equals("failed")){
+            System.out.println("Downloading failed. Requested file is corrupt");
+        }
+        else {
+            int noParts = Integer.parseInt(answer);
+            System.out.println("Number of parts = " + noParts);
+
+            int totalSize = 0;
+            ArrayList<byte[]> partitions = new ArrayList<>();
+
+            System.out.println("New socket for receiving on " + (portDownload));
+
+            ServerSocket downloadSSocket = new ServerSocket(portDownload);
+            Socket downloadSocket = null;
+            DataInputStream downloadStream = null;
+
+            for(int i = 0; i < noParts; i++){
+
+
+                downloadSocket = downloadSSocket.accept();
+                System.out.println("Connection***************************");
+                downloadStream = new DataInputStream(downloadSocket.getInputStream());
+                String size = downloadStream.readUTF();
+                int partitionSize = Integer.parseInt(size);
+
+
+                System.out.println("packet size is = " + partitionSize);
+
+
+
+                byte[] receive = new byte[partitionSize];
+                downloadStream.readFully(receive);
+                totalSize += receive.length - 1;
+                partitions.add(receive);
+
+                System.out.println("packet number " + receive[0] + " received");
+
+
+            }
+
+            System.out.println("total size = " + totalSize);
+
+            downloadSSocket.close();
+            downloadSocket.close();
+            downloadStream.close();
+
+            System.out.println("All sockets closed");
+
+
+            byte[] mergedFile = new byte[totalSize];
+            int index = 0;
+            for (int t = 1; t <= partitions.size(); t++){  // merging in correct order
+                for (byte[] x : partitions){
+                    if((int) x[0] == t){
+                        System.out.println("packet number " + t + " merged");
+                        for(int p = 1; p < x.length; p++){
+                            mergedFile[index] = x[p];
+                            index++;
+                        }
+                    }
+                }
+            }
+
+            try (FileOutputStream fos = new FileOutputStream(directory + fileName)) {
+                fos.write(mergedFile);
+            } catch (IOException e){}
+        }
+
+    }
 
 }
 
@@ -162,7 +258,7 @@ class UploadListener extends Thread{
                     String fileName = request.split(" ")[1];
                     long fileSize = Long.parseLong(request.split(" ")[2]);
 
-                    user.addTotolSize((double)fileSize);
+                    user.addTotalSize((double)fileSize);
 
                     System.out.println(port + ": fileSize = " + fileSize);
                     System.out.println(port + ": fileName = " + fileName);
@@ -190,7 +286,7 @@ class UploadListener extends Thread{
                     System.out.println(port + ": size = " + sizeDeletingFile);
                     f.delete();
                     System.out.println("Deleted successfully");
-                    user.addTotolSize(-sizeDeletingFile);
+                    user.addTotalSize(-sizeDeletingFile);
                 }
                 else if(request.startsWith("rename")){
                     String fileName = request.split(" ")[1];
@@ -205,6 +301,55 @@ class UploadListener extends Thread{
                     file_old.renameTo(file_new);
 
                 }
+                else if(request.startsWith("send")){
+
+                    int idRequester = Integer.parseInt(request.split(" ")[1]);
+                    String fileInfo = request.split(" ")[2];
+
+                    System.out.println("peer " + user.getId() + " to " + idRequester + " this: " + fileInfo);
+
+                    int lastIndex = fileInfo.split("\\.").length - 1;
+                    int partNumber = Integer.parseInt(fileInfo.split("\\.")[lastIndex]);
+
+
+                    File file = new File(directory + fileInfo);
+                    byte[] fileContent = null;
+                    try {
+                        fileContent = Files.readAllBytes(file.toPath());
+                    } catch (IOException e){}
+
+                    System.out.println("sending size ... 1");
+
+                    byte[] fileContent2 = new byte[fileContent.length + 1];
+                    fileContent2[0] = (byte) partNumber; // offset
+                    for (int k = 1; k <= fileContent.length; k++)
+                        fileContent2[k] = fileContent[k-1];
+
+
+                    System.out.println("sending size ... 2");
+
+                    System.out.println("Socket on port = " + (6000 + idRequester));
+                    //sending partition's size
+                    Socket socketSend = new Socket("localhost", 6000 + idRequester);
+
+                    System.out.println("sending size ... 3");
+
+                    DataOutputStream outStream = new DataOutputStream(socketSend.getOutputStream());
+                    String size = String.valueOf(fileContent2.length);
+                    outStream.writeUTF(size);
+
+                    System.out.println("size sent = " + size);
+
+                    // offset<0> + data<1-end>
+                    System.out.println("partition " + partNumber + " sending... to " + (6000 + idRequester));
+                    outStream.write(fileContent2);
+                    System.out.println("partition " + partNumber + " sent to " + (6000 + idRequester ));
+
+
+                    socketSend.close();
+                    outStream.close();
+
+                }
             } catch (IOException e){}
 
             try {
@@ -215,3 +360,59 @@ class UploadListener extends Thread{
     }
 
 }
+
+
+
+
+class DownloadListener extends Thread{
+
+    private byte[] data;
+    private User user;
+
+    DownloadListener(User user){
+        this.user = user;
+    }
+
+    public byte[] getData(){
+        return data;
+    }
+    public int getSize(){
+        return data.length - 1;
+    }
+
+    public void run(){
+        try {
+            ServerSocket sizeSSocket = new ServerSocket(12346);
+            Socket sizeSocket = sizeSSocket.accept();
+            DataInputStream sizeStream = new DataInputStream(sizeSocket.getInputStream());
+            String size = sizeStream.readUTF();
+            int partitionSize = Integer.parseInt(size);
+
+            sizeSocket.close();
+            sizeSSocket.close();
+            sizeStream.close();
+
+            System.out.println("packet size = " + partitionSize);
+            ServerSocket downloadSSocket = new ServerSocket(user.getPortDownload());
+            System.out.println("port download receiver = " + user.getPortDownload());
+            Socket downloadSocket = downloadSSocket.accept();
+            DataInputStream downloadStream = new DataInputStream(downloadSocket.getInputStream());
+
+
+            byte[] receive = new byte[partitionSize];
+            data = receive;
+            downloadStream.readFully(receive);
+            //partitions.add(receive);
+
+            System.out.println("packet number " + receive[0] + " received");
+
+
+            downloadSSocket.close();
+            downloadSocket.close();
+            downloadStream.close();
+
+        } catch (IOException e){}
+
+    }
+}
+

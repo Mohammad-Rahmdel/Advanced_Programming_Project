@@ -23,7 +23,7 @@ public class Run {
 
             if(input.startsWith("new user")){
                 int id = Integer.parseInt(input.split(" ")[2]);
-                if ( (id < 999) && (id > 0) ) {
+                if ( (id < 1000) && (id > 0) ) {
                     admin.addUser(new User(id));
                     ids.add(id);
                 }
@@ -79,6 +79,18 @@ public class Run {
                     else {
                         admin.delete(fileName);
                     }
+                }
+                else
+                    System.out.println("This ID doesn't exist");
+            }
+            else if(input.startsWith("download")){ // download readme.txt 3
+                String fileName = input.split(" ")[1];
+                int id = Integer.parseInt(input.split(" ")[2]);
+                if(isValid(id)){
+                    if (admin.hasFile(fileName))
+                        (admin.getUser(id)).download(fileName);
+                    else
+                        System.out.println("This file doesn't exist");
                 }
                 else
                     System.out.println("This ID doesn't exist");
