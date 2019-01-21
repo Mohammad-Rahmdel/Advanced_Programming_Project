@@ -108,11 +108,11 @@ public class Admin{
         return status;
     }
 
-    public static String allocation(String path, int n) throws FileNotFoundException {
+    public static String allocation(String path, int n, String id) throws FileNotFoundException {
         String[] ss = path.split("/");
         int splitter = ss.length;
         String fileName = ss[splitter-1];
-        String idUploader = ss[splitter-2];
+        String idUploader = id;//ss[splitter-2];
 
         System.out.println("path = " + path);
         System.out.println("name = " + fileName);
@@ -236,11 +236,11 @@ class Server extends Thread{
                     String fileDirectory = request.split(" ")[1];
                     int partition = Integer.parseInt(request.split(" ")[2]);
 
-                    String allocation = Admin.allocation(fileDirectory, partition);
+                    String idUploader = request.split(" ")[3];
+
+                    String allocation = Admin.allocation(fileDirectory, partition, idUploader);
 
 
-                    String[] ss = fileDirectory.split("/");
-                    String idUploader = ss[ss.length-2];
                     int portAllocation = 5000 + Integer.parseInt(idUploader);
 
                     System.out.println(allocation);

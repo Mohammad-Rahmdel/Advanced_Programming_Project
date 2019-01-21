@@ -44,7 +44,9 @@ public class Run {
                     input = scanner.nextLine();
                     int partition = Integer.parseInt(input);
 
-                    (admin.getUser(id)).upload(fileName, partition);
+                    String path = "/home/mohammad/Desktop/User_Files/";
+
+                    (admin.getUser(id)).upload(fileName, partition, path);
                 }
                 else
                     System.out.println("This ID doesn't exist");

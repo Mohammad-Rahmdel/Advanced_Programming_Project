@@ -52,9 +52,9 @@ public class User {
         totalSize += size;
     }
 
-    public void upload(String fileName, int partitions) throws IOException{
+    public void upload(String fileName, int partitions, String path) throws IOException{
         files.add(fileName);
-        String filePath = directory + fileName;
+        String filePath = path + fileName;
         System.out.println("Uploading ...");
         try {
             client = new Socket("localhost", 8888);
@@ -62,7 +62,7 @@ public class User {
         System.out.println("User connected");
 
         DataOutputStream out = new DataOutputStream(client.getOutputStream());
-        String request = "upload " + filePath + " " + partitions;            //e.g. upload /.../readme.txt 3
+        String request = "upload " + filePath + " " + partitions + " " + getId();    //e.g. upload /.../readme.txt 3 id
         out.writeUTF(request);
 
         ServerSocket allocationSocket = new ServerSocket(portAllocationReceiver);
@@ -107,7 +107,7 @@ public class User {
             } catch (IOException e){}
         }
 
-        File file = new File(directory + fileName);
+        File file = new File(path + fileName);
         byte[] fileContent = null;
         try {
             fileContent = Files.readAllBytes(file.toPath());
