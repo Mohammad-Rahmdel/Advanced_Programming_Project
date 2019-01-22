@@ -11,8 +11,11 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 
 public class Graphix {
+
+    private ArrayList<String[]> filesInfo = new ArrayList<>();
     private int GUIPort;
     private int id;
     private JFrame frame;
@@ -72,7 +75,7 @@ public class Graphix {
         nameField = new JTextField("");
         nameField.setEditable(false);
 
-        labelExt = new JLabel("File extention: ");
+        labelExt = new JLabel("File extension: ");
         extField = new JTextField("");
         extField.setEditable(false);
 
@@ -321,10 +324,17 @@ public class Graphix {
                             ServerSocket guiSSocket = null;
                             try {
                                 guiSSocket = new ServerSocket(GUIPort);
-                            } catch (IOException e) {}
+                                System.out.println("Rename listening to " + GUIPort);
+                            } catch (IOException e) {
+                                System.out.println("Rename error = " + e);
+                            }
                             try {
+                                System.out.println("Rename accepting ...");
                                 guiSocket = guiSSocket.accept();
-                            } catch (IOException e) {}
+                                System.out.println("Rename accepted");
+                            } catch (IOException e) {
+                                System.out.println("Rename accepting error = " + e);
+                            }
                             String response = "nothing";
                             try {
                                 DataInputStream in = new DataInputStream(guiSocket.getInputStream());
@@ -404,8 +414,6 @@ public class Graphix {
 
 
 
-
-
         buttonsPanel = new JPanel(new FlowLayout());
         buttonsPanel.add(downloadButton);
         buttonsPanel.add(uploadButton);
@@ -420,7 +428,9 @@ public class Graphix {
         filesList.addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent listSelectionEvent) {
-                String selected = filesList.getSelectedValue().toString();
+                String selected = "";
+                if(filesList.getSelectedValue().toString() != null)
+                    selected = filesList.getSelectedValue().toString();
                 System.out.println(selected);
             }
         });
@@ -434,14 +444,76 @@ public class Graphix {
         fiRefresh.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                filesList.setListData(listOfFiles);
+                //filesList.setListData(listOfFiles);
                 System.out.println("Refresh is selected");
 
 
                 //TODO *******************************************************************************
                 //TODO *******************************************************************************
+                //String[] list = {"a.txt", "b.mp4", "c.jpg", "d.zip"};
+                Socket socketList = null;
+                DataOutputStream outList = null;
+                try {
+                    socketList = new Socket("localhost", 8888);
+                    outList = new DataOutputStream(socketList.getOutputStream());
+                } catch (UnknownHostException e){} catch (IOException e){}
+                String request = "send_list " + id;
+                try {
+                    outList.writeUTF(request);
+                    outList.close();
+                    socketList.close();
+                } catch (IOException e){}
+
+
+
+                Socket socketList2 = null;
+                ServerSocket socketServerList = null;
+                try {
+                    socketServerList = new ServerSocket(13000 + id);
+                } catch (IOException e) {}
+                try {
+                    socketList2 = socketServerList.accept();
+                } catch (IOException e) {}
+                String list = "";
+                try {
+                    DataInputStream in = new DataInputStream(socketList2.getInputStream());
+                    list = in.readUTF();
+                    socketList2.close();
+                    socketServerList.close();
+                }catch (IOException e) {}
+
+                filesInfo.removeAll(filesInfo);
+
+                if(list.length() > 0) {
+                    String[] splitterFiles = list.split("@");
+                    for (String files : splitterFiles) {
+                        String[] fileSplitter = files.split(" ");
+                        String name = fileSplitter[0];
+                        String directory = fileSplitter[1];
+                        String distribution = fileSplitter[2];
+                        String owner = fileSplitter[3];
+                        String[] res = new String[4];
+                        res[0] = name;
+                        res[1] = directory;
+                        res[2] = distribution;
+                        res[3] = owner;
+                        filesInfo.add(res);
+                    }
+                }
+
                 //TODO *******************************************************************************
                 //TODO *******************************************************************************
+                String[] fileNames = new String[filesInfo.size()];
+                for (int i = 0; i < filesInfo.size(); i++){
+                    fileNames[i] = filesInfo.get(i)[0];
+                }
+
+
+                filesList.setListData(fileNames);
+                //System.out.println("x = " + list);
+
+
+
 
             }
         });
@@ -466,32 +538,61 @@ public class Graphix {
         frame.getContentPane().add(mainPanel);
         frame.setVisible(true);
         // frame.pack();
-        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+    }
+
+
+
+    public String getOwner(String fileName){
+        for(String[] f : filesInfo){
+            if (f[0].equals(fileName)){
+                return f[3];
+            }
+        }
+        return "";
+    }
+
+    public String getDistribution(String fileName){
+        for(String[] f : filesInfo){
+            if (f[0].equals(fileName)){
+                return f[2];
+            }
+        }
+        return "";
+    }
+
+    public String getDirectory(String fileName){
+        for(String[] f : filesInfo){
+            if (f[0].equals(fileName)){
+                return f[1];
+            }
+        }
+        return "";
     }
 
 }
 
 
-
-class GUIMessageReceiver extends Thread{
-    private int port;
-
-    public GUIMessageReceiver(int port){
-        this.port = port;
-    }
-    public void run(){
-
-        Socket guiSocket = null;
-        ServerSocket guiSSocket = null;
-        try {
-            guiSSocket = new ServerSocket(port);
-        } catch (IOException e) {}
-        try {
-            guiSocket = guiSSocket.accept();
-        } catch (IOException e) {}
-        try {
-            DataInputStream in = new DataInputStream(guiSocket.getInputStream());
-            String response = in.readUTF();
-        }catch (IOException e) {}
-    }
-}
+//
+//class GUIMessageReceiver extends Thread{
+//    private int port;
+//
+//    public GUIMessageReceiver(int port){
+//        this.port = port;
+//    }
+//    public void run(){
+//
+//        Socket guiSocket = null;
+//        ServerSocket guiSSocket = null;
+//        try {
+//            guiSSocket = new ServerSocket(port);
+//        } catch (IOException e) {}
+//        try {
+//            guiSocket = guiSSocket.accept();
+//        } catch (IOException e) {}
+//        try {
+//            DataInputStream in = new DataInputStream(guiSocket.getInputStream());
+//            String response = in.readUTF();
+//        }catch (IOException e) {}
+//    }
+//}

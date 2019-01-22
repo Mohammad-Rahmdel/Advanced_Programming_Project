@@ -1,6 +1,7 @@
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -12,12 +13,12 @@ public class Admin{
 
 
     public static ArrayList<User> users = new ArrayList<>();
-    private static ArrayList<String[]> files = new ArrayList<>(); // [allocation format][file name][id of uploader]
+    private static ArrayList<String[]> files = new ArrayList<>(); // [allocation format][file name][id of uploader][directory]
     private static int redundancy = 2;
 
 
     public Admin(){
-        Thread t = new Server();
+        Thread t = new Server(this);
         t.start();
     }
     //    public static Admin getInstance() throws IOException{
@@ -27,6 +28,10 @@ public class Admin{
 //        return single_instance;
 //    }
 
+
+    public ArrayList<String[]> getFiles(){
+        return files;
+    }
 
 
     public void addUser(User user){
@@ -110,6 +115,11 @@ public class Admin{
 
     public static String allocation(String path, int n, String id) throws FileNotFoundException {
         String[] ss = path.split("/");
+        String directory = "";
+        for(int i = 0; i < ss.length - 1; i++){
+            directory += ss[i] + "/";
+        }
+
         int splitter = ss.length;
         String fileName = ss[splitter-1];
         String idUploader = id;//ss[splitter-2];
@@ -137,7 +147,7 @@ public class Admin{
             }
         }
         allocation = allocation.substring(0, allocation.length() - 1); // omitting last ','
-        String[] info = {allocation, fileName, idUploader};
+        String[] info = {allocation, fileName, idUploader, directory};
         files.add(info);
         return allocation;
     }
@@ -214,7 +224,11 @@ public class Admin{
 class Server extends Thread{
     private ServerSocket serverSocket;
     private int publicPort = 8888;
+    Admin admin;
 
+    public Server(Admin admin){
+        this.admin = admin;
+    }
 
     public void run(){
         try {
@@ -275,6 +289,29 @@ class Server extends Thread{
 
                     }
 
+                }
+                else if(request.startsWith("send_list")){
+                    int portN = 13000 + Integer.parseInt(request.split(" ")[1]);
+                    Socket socketList = null;
+                    DataOutputStream outList = null;
+                    try {
+                        socketList = new Socket("localhost", portN);
+                        outList = new DataOutputStream(socketList.getOutputStream());
+                    } catch (UnknownHostException e){} catch (IOException e){}
+                    String answer = "";
+
+
+                    ArrayList<String[]> listOfFiles = admin.getFiles();
+                    for (String[] f: listOfFiles){
+                        answer += f[1] + " " + f[3] + " " + f[0] + " " + f[2] + "@"; //name directory allocation owner
+                    }
+                    if(answer.length() > 0)
+                        answer = answer.substring(0,answer.length() - 1); //omitting last *
+                    try {
+                        outList.writeUTF(answer);
+                        outList.close();
+                        socketList.close();
+                    } catch (IOException e){}
                 }
             } catch (IOException e){}
 

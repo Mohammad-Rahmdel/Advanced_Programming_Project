@@ -1,3 +1,4 @@
+import javax.swing.*;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -84,15 +85,29 @@ public class RunGUI extends Thread{
 
                         Socket responseSocket = null;
                         DataOutputStream out = null;
+                        System.out.println("rename = null");
+
+                        while (responseSocket == null){
+                            try {
+                                responseSocket = new Socket("localhost", 12000 + id);
+                                //System.out.println("rename Socket Created");
+                                out = new DataOutputStream(responseSocket.getOutputStream());
+                                //System.out.println("rename Stream Created");
+                            } catch (UnknownHostException e){
+                                //System.out.println("rename Stream error1 = " + e);
+                            } catch (IOException e){
+                                //System.out.println("rename Stream error2 = " + e);
+                            }
+                        }
+
                         try {
-                            responseSocket = new Socket("localhost", 12000 + id);
-                            out = new DataOutputStream(responseSocket.getOutputStream());
-                        } catch (UnknownHostException e){} catch (IOException e){}
-                        try {
+                            System.out.println("RESPONSE = " + response);
                             out.writeUTF(response);
                             out.close();
                             responseSocket.close();
-                        } catch (IOException e){}
+                        } catch (IOException e){
+                            System.out.println("sending error = " + e);
+                        }
 
                     }
                     else
@@ -117,13 +132,16 @@ public class RunGUI extends Thread{
 
                         Socket responseSocket = null;
                         DataOutputStream out = null;
-                        try {
-                            responseSocket = new Socket("localhost", 12000 + id);
-                            System.out.println("delete response = " + response);
-                            out = new DataOutputStream(responseSocket.getOutputStream());
-                        } catch (IOException e){
-                            System.out.println("error = " + e);
+                        while (responseSocket == null) {
+                            try {
+                                responseSocket = new Socket("localhost", 12000 + id);
+                                System.out.println("delete response = " + response);
+                                out = new DataOutputStream(responseSocket.getOutputStream());
+                            } catch (IOException e) {
+                               // System.out.println("error = " + e);
+                            }
                         }
+
                         try {
                             out.writeUTF(response);
                             out.close();
