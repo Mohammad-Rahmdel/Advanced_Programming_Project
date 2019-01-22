@@ -157,8 +157,11 @@ public class User {
 
         if(answer.equals("failed")){
             System.out.println("Downloading failed. Requested file is corrupt");
+
+            //TODO SEND MESSAGE FAILED
         }
         else {
+            //TODO SEND MESSAGE SUCCESS
             int noParts = Integer.parseInt(answer);
             System.out.println("Number of parts = " + noParts);
 
@@ -233,20 +236,25 @@ class UploadListener extends Thread{
     private int port;
     private String directory;
     private User user;
+    private Socket socketUp;
 
     public UploadListener(User user){
         this.user = user;
         this.port = user.getPortListen();
         this.directory = user.getDirectory();
-    }
 
-    public void run(){
+
         try {
             uploadListenerSocket = new ServerSocket(port);
         } catch (IOException e) {}
+        socketUp = null;
+    }
+
+    public void run(){
+
 
         while (true){
-            Socket socketUp = null;
+
             try {
                 socketUp = uploadListenerSocket.accept();
             } catch (IOException e) {}

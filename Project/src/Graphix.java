@@ -5,12 +5,15 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
 public class Graphix {
+    private int GUIPort;
     private int id;
     private JFrame frame;
     private JPanel mainPanel;
@@ -53,6 +56,7 @@ public class Graphix {
 
     public Graphix(int id){
         this.id = id;
+        GUIPort = 12000 + id;
         frame = new JFrame();
         frame.setTitle("" + id);
         frame.setSize(900,600);
@@ -143,6 +147,7 @@ public class Graphix {
         downloadButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
+/*
                 JFileChooser j = new JFileChooser();
 
                 // invoke the showsOpenDialog function to show the save dialog
@@ -176,6 +181,31 @@ public class Graphix {
                 // if the user cancelled the operation
                 else
                     System.out.println("the user cancelled the operation");
+            }
+            */
+                if (filesList.getSelectedIndex() >= 0) {
+
+                    JOptionPane.showMessageDialog(null, "File Downloaded successfully",
+                            "" + "Download Response", JOptionPane.INFORMATION_MESSAGE);
+
+
+                    String fileName = listOfFiles[filesList.getSelectedIndex()];
+                    String userId = "" + id;
+                    Socket socketDownload = null;
+                    DataOutputStream out = null;
+                    try {
+                        socketDownload = new Socket("localhost", 9999);
+                        out = new DataOutputStream(socketDownload.getOutputStream());
+                    } catch (UnknownHostException e){} catch (IOException e){}
+                    String request = "download " + fileName + " " + userId;
+                    try {
+                        out.writeUTF(request);
+                        out.close();
+                        socketDownload.close();
+                    } catch (IOException e){}
+
+                }
+
 
 
 
@@ -284,6 +314,28 @@ public class Graphix {
                                 out.close();
                                 socketRename.close();
                             } catch (IOException e) {}
+
+
+
+                            Socket guiSocket = null;
+                            ServerSocket guiSSocket = null;
+                            try {
+                                guiSSocket = new ServerSocket(GUIPort);
+                            } catch (IOException e) {}
+                            try {
+                                guiSocket = guiSSocket.accept();
+                            } catch (IOException e) {}
+                            String response = "nothing";
+                            try {
+                                DataInputStream in = new DataInputStream(guiSocket.getInputStream());
+                                response = in.readUTF();
+                                guiSocket.close();
+                                guiSSocket.close();
+                            }catch (IOException e) {}
+                            JOptionPane.showMessageDialog(null, response, "" + "Rename Response",
+                                    JOptionPane.INFORMATION_MESSAGE);
+
+
                         }
                     });
                     dialog.setSize(400, 100);
@@ -320,6 +372,26 @@ public class Graphix {
                         } catch (IOException e){}
 
 
+
+                        Socket guiSocket = null;
+                        ServerSocket guiSSocket = null;
+                        try {
+                            guiSSocket = new ServerSocket(GUIPort);
+                        } catch (IOException e) {}
+                        try {
+                            guiSocket = guiSSocket.accept();
+                        } catch (IOException e) {}
+                        String response = "nothing";
+                        try {
+                            DataInputStream in = new DataInputStream(guiSocket.getInputStream());
+                            response = in.readUTF();
+                            guiSocket.close();
+                            guiSSocket.close();
+                        }catch (IOException e) {}
+                        JOptionPane.showMessageDialog(null, response, "" + "Delete Response",
+                                JOptionPane.INFORMATION_MESSAGE);
+
+
                     } else {
                         System.out.println("Cancel deleting file");
                     }
@@ -342,7 +414,7 @@ public class Graphix {
         filePanel.add(buttonsPanel, BorderLayout.SOUTH);
 
         filesList = new JList();
-        listOfFiles = new String[]{"Ubuntu.iso", "Movie.mp4", "test.txt"};
+        listOfFiles = new String[]{"Ubuntu.iso", "Movie.mp4", "test.txt", "q.txt"};
         filesList.setListData(listOfFiles);
         //filesList.add
         filesList.addListSelectionListener(new ListSelectionListener() {
@@ -397,4 +469,29 @@ public class Graphix {
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
     }
 
+}
+
+
+
+class GUIMessageReceiver extends Thread{
+    private int port;
+
+    public GUIMessageReceiver(int port){
+        this.port = port;
+    }
+    public void run(){
+
+        Socket guiSocket = null;
+        ServerSocket guiSSocket = null;
+        try {
+            guiSSocket = new ServerSocket(port);
+        } catch (IOException e) {}
+        try {
+            guiSocket = guiSSocket.accept();
+        } catch (IOException e) {}
+        try {
+            DataInputStream in = new DataInputStream(guiSocket.getInputStream());
+            String response = in.readUTF();
+        }catch (IOException e) {}
+    }
 }

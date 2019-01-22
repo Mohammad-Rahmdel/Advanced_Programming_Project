@@ -3,6 +3,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
@@ -66,18 +67,33 @@ public class RunGUI extends Thread{
                     String fileName = input.split(" ")[1];
                     int id = Integer.parseInt(input.split(" ")[2]);
                     String newName = input.split(" ")[3];
+                    String response;
                     if(isValid(id)){
                         int status = admin.hasAccess(id, fileName);
                         if(status == 1)
-                            System.out.println("This file doesn't exist!");
+                            response = "This file doesn't exist!";
                         else if(status == 2)
-                            System.out.println("You cannot rename this file!");
+                            response = "You cannot rename this file!";
                         else {
                             //System.out.println("Enter the new name: ");
                             //input = scanner.nextLine();
-                            //admin.rename(fileName, newName);
+                            response = "File renamed successfully";
+                            admin.rename(fileName, newName);
                             System.out.print("message = " + input);
                         }
+
+                        Socket responseSocket = null;
+                        DataOutputStream out = null;
+                        try {
+                            responseSocket = new Socket("localhost", 12000 + id);
+                            out = new DataOutputStream(responseSocket.getOutputStream());
+                        } catch (UnknownHostException e){} catch (IOException e){}
+                        try {
+                            out.writeUTF(response);
+                            out.close();
+                            responseSocket.close();
+                        } catch (IOException e){}
+
                     }
                     else
                         System.out.println("This ID doesn't exist");
@@ -85,15 +101,37 @@ public class RunGUI extends Thread{
                 else if(input.startsWith("delete")){ // delete readme.txt 2
                     String fileName = input.split(" ")[1];
                     int id = Integer.parseInt(input.split(" ")[2]);
+                    String response;
                     if(isValid(id)){
                         int status = admin.hasAccess(id, fileName);
                         if(status == 1)
-                            System.out.println("This file doesn't exist!");
+                            response = "This file doesn't exist!";
                         else if(status == 2)
-                            System.out.println("You cannot delete this file!");
+                            response = "You cannot delete this file!";
                         else {
+                            response = "File deleted successfully";
                             admin.delete(fileName);
                         }
+
+
+
+                        Socket responseSocket = null;
+                        DataOutputStream out = null;
+                        try {
+                            responseSocket = new Socket("localhost", 12000 + id);
+                            System.out.println("delete response = " + response);
+                            out = new DataOutputStream(responseSocket.getOutputStream());
+                        } catch (IOException e){
+                            System.out.println("error = " + e);
+                        }
+                        try {
+                            out.writeUTF(response);
+                            out.close();
+                            responseSocket.close();
+                        } catch (IOException e){}
+
+
+
                     }
                     else
                         System.out.println("This ID doesn't exist");
@@ -101,11 +139,19 @@ public class RunGUI extends Thread{
                 else if(input.startsWith("download")){ // download readme.txt 3
                     String fileName = input.split(" ")[1];
                     int id = Integer.parseInt(input.split(" ")[2]);
+                    String response = "";
                     if(isValid(id)){
-                        if (admin.hasFile(fileName))
+                        if (admin.hasFile(fileName)) {
                             (admin.getUser(id)).download(fileName);
+                            response = "File downloaded successfully";
+                        }
                         else
-                            System.out.println("This file doesn't exist");
+                            response = "This file doesn't exist";
+
+
+                        //TODO SEND RESPONSE
+
+
                     }
                     else
                         System.out.println("This ID doesn't exist");
