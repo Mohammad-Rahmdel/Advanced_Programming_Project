@@ -7,16 +7,19 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 
 public class Graphix {
-
     private ArrayList<String[]> filesInfo = new ArrayList<>();
     private int GUIPort;
+
     private int id;
     private JFrame frame;
     private JPanel mainPanel;
@@ -152,21 +155,16 @@ public class Graphix {
             public void actionPerformed(ActionEvent actionEvent) {
 /*
                 JFileChooser j = new JFileChooser();
-
                 // invoke the showsOpenDialog function to show the save dialog
                 int r = j.showSaveDialog(null);
-
                 // if the user selects a file
                 if (r == JFileChooser.APPROVE_OPTION)
-
                 {
                     // set the label to the path of the selected file
                     System.out.println("file path:"+ j.getSelectedFile().getName());
                     System.out.println("user id :" + id);
                     String fileName = j.getSelectedFile().getName();
                     String userId = "" + id;
-
-
                     Socket socketDownload = null;
                     DataOutputStream out = null;
                     try {
@@ -179,7 +177,6 @@ public class Graphix {
                         out.close();
                         socketDownload.close();
                     } catch (IOException e){}
-
                 }
                 // if the user cancelled the operation
                 else
@@ -422,16 +419,52 @@ public class Graphix {
         filePanel.add(buttonsPanel, BorderLayout.SOUTH);
 
         filesList = new JList();
-        listOfFiles = new String[]{"Ubuntu.iso", "Movie.mp4", "test.txt", "q.txt"};
+        listOfFiles = new String[]{};//"Ubuntu.iso", "Movie.mp4", "test.txt", "q.txt"};
         filesList.setListData(listOfFiles);
         //filesList.add
         filesList.addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent listSelectionEvent) {
-                String selected = "";
-                if(filesList.getSelectedValue().toString() != null)
-                    selected = filesList.getSelectedValue().toString();
-                System.out.println(selected);
+
+                if (!listSelectionEvent.getValueIsAdjusting()) {    //This line prevents double events
+                    String selected = "";
+                    System.out.println("---------------------------------------------------------------------------------");
+                    for (String str : listOfFiles) {
+                        System.out.println(str);
+                    }
+                    System.out.println("---------------------------------------------------------------------------------");
+
+                    try {
+                        if(filesList!= null && filesList.getSelectedValue().toString() != null){
+                            selected = filesList.getSelectedValue().toString();
+                            File current = new File(getDirectory(selected) + "/" + selected);
+                            nameField.setText(current.getName());
+                            extField.setText(getExt(current.getName()));
+
+                            try {
+                                BasicFileAttributes attr = Files.readAttributes(current.toPath(), BasicFileAttributes.class);
+
+                                sizeField.setText(attr.size()+" B");
+                                partsField.setText(""+getDistribution(selected).split(",").length/2);
+                                distField.setText("[ "+ getDistribution(selected)+ " ]");
+                                ownerField.setText(getOwner(selected));
+
+                                String x = attr.creationTime().toString();
+                                String y = attr.lastAccessTime().toString();
+                                createDateField.setText(x.substring(0,10) + " " + x.substring(12,19));
+                                accessField.setText(y.substring(0,10) + " " + y.substring(12,19));
+                            } catch (Exception e) {
+                                System.out.println(e.getMessage());
+                            }
+
+                        }
+                    } catch (NullPointerException e){
+                        System.out.println("null pointer in GUI EXCEPTION = " + e);
+                    }
+
+                    System.out.println(selected);
+
+                }
             }
         });
         listPanel.add(filesList);
@@ -570,6 +603,11 @@ public class Graphix {
         }
         return "";
     }
+
+    public String getExt(String fileName) {
+        return fileName.split("\\.")[fileName.split("\\.").length -1];
+    }
+
 
 }
 
