@@ -1,4 +1,3 @@
-import javax.swing.*;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -9,19 +8,31 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
 
+/**
+ * this class is for creating GUI
+ */
 public class RunGUI extends Thread{
     private static ArrayList<Integer> ids = new ArrayList<>();
     private static HashMap<Integer, Graphix> guis = new HashMap<>();
 
     private ServerSocket serverSocket;
     private int publicPort = 9999;
-    Admin admin;
+    private Admin admin;
 
+    /**
+     * this thread communicates between the infrastructure and GUI
+     * @param admin
+     */
     public RunGUI(Admin admin){
         this.admin = admin;
         this.start();
     }
 
+    /**
+     *
+     * @param id
+     * @return whether a peer with id is up or not
+     */
     public static boolean isValid(int id){
         for(Integer i : ids)
             if(i == id)
@@ -30,7 +41,6 @@ public class RunGUI extends Thread{
     }
 
     public void run(){
-        Scanner scanner = new Scanner(System.in);
         Socket socket;
 
         try {
@@ -43,12 +53,12 @@ public class RunGUI extends Thread{
             try {
                 socket = serverSocket.accept();
             } catch (IOException e) {}
-            System.out.println("GUI Listens ...");
+            //System.out.println("GUI Listens ...");
 
             try {
                 DataInputStream in = new DataInputStream(socket.getInputStream());
 
-                String input = in.readUTF();
+                String input = in.readUTF();                    //receives commands from GUI
                 System.out.println("message received |RUN_GUI| = " + input);
 
                 if(input.startsWith("upload")){                    //e.g. upload readme.txt 3 (directory) (parts)
@@ -59,10 +69,10 @@ public class RunGUI extends Thread{
                         //String path = "/home/mohammad/Desktop/User_Files/";
                         String path = input.split(" ")[3];
                         //System.out.print("message = " + input);
-                        (admin.getUser(id)).upload(fileName, partition, path);
+                        (admin.getUser(id)).upload(fileName, partition, path);  //upload the file
                     }
                     else
-                        System.out.println("This ID doesn't exist");
+                        System.out.println("This ID doesn't exist");            //invalid ID
                 }
                 else if(input.startsWith("rename")){ // rename readme.txt 2 (new Name)
                     String fileName = input.split(" ")[1];
@@ -87,7 +97,8 @@ public class RunGUI extends Thread{
                         DataOutputStream out = null;
                         System.out.println("rename = null");
 
-                        while (responseSocket == null){
+                        while (responseSocket == null){             //this line prevents sending the message
+                                                                    // before the receivers socket opening
                             try {
                                 responseSocket = new Socket("localhost", 12000 + id);
                                 //System.out.println("rename Socket Created");
@@ -101,7 +112,7 @@ public class RunGUI extends Thread{
                         }
 
                         try {
-                            System.out.println("RESPONSE = " + response);
+                            System.out.println("RESPONSE = " + response);       //sends the response
                             out.writeUTF(response);
                             out.close();
                             responseSocket.close();
@@ -166,10 +177,6 @@ public class RunGUI extends Thread{
                         else
                             response = "This file doesn't exist";
 
-
-                        //TODO SEND RESPONSE
-
-
                     }
                     else
                         System.out.println("This ID doesn't exist");
@@ -198,10 +205,10 @@ public class RunGUI extends Thread{
 
         Scanner scanner = new Scanner(System.in);
         String input = scanner.nextLine();
-        while (!input.equals("finish")){
+        while (!input.equals("finish")){            // terminating command
             if(input.startsWith("new user")){
                 int id = Integer.parseInt(input.split(" ")[2]);
-                if ( (id < 1000) && (id > 0) ) {
+                if ( (id < 1000) && (id > 0) ) {    // range of valid ids
                     admin.addUser(new User(id));
                     ids.add(id);
                     guis.put(id,new Graphix(id));
