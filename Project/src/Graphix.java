@@ -510,6 +510,7 @@ public class Graphix {
 
 
                 filesList.setListData(fileNames);
+                listOfFiles = fileNames;
                 //System.out.println("x = " + list);
 
 
