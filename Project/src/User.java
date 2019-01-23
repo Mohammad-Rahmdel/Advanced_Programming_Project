@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 
 public class User {
-    private static final String PATH = "/home/mohammad/Desktop/User_Files/";
+    private static final String PATH = System.getProperty("user.home")+"/Desktop/User_Files/";
     private int id;
     private String directory;
     private int portListen;
@@ -423,4 +423,3 @@ class DownloadListener extends Thread{
 
     }
 }
-

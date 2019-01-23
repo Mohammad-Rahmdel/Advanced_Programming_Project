@@ -138,7 +138,7 @@ public class RunGUI extends Thread{
                                 System.out.println("delete response = " + response);
                                 out = new DataOutputStream(responseSocket.getOutputStream());
                             } catch (IOException e) {
-                               // System.out.println("error = " + e);
+                                // System.out.println("error = " + e);
                             }
                         }
 
@@ -219,5 +219,3 @@ public class RunGUI extends Thread{
         }
     }
 }
-
-
