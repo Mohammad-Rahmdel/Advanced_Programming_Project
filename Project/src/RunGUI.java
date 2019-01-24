@@ -98,7 +98,7 @@ public class RunGUI extends Thread{
                         System.out.println("rename = null");
 
                         while (responseSocket == null){             //this line prevents sending the message
-                                                                    // before the receivers socket opening
+                            // before the receivers socket opening
                             try {
                                 responseSocket = new Socket("localhost", 12000 + id);
                                 //System.out.println("rename Socket Created");

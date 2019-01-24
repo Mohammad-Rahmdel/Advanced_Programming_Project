@@ -1,14 +1,11 @@
+import javax.imageio.ImageIO;
 import javax.swing.*;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.*;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.IOException;
+import java.awt.image.BufferedImage;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -16,64 +13,105 @@ import java.nio.file.Files;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 
-public class Graphix {
+/**
+ *
+ * This class handles GUI
+ */
+class Graphix {
+    //this field holds information about files
     private ArrayList<String[]> filesInfo = new ArrayList<>();
+
+    //each user has a port to interact with admin and others
     private int GUIPort;
 
+    //unique id for each user
     private int id;
+
+    //main frame of GUI
     private JFrame frame;
+    //central panel of form
     private JPanel mainPanel;
+    //this panel contains list and tools on the left side
     private JPanel listPanel;
+    //this panel contains preview and properties tab
     private JPanel filePanel;
     private JTabbedPane fileTabs;
     private JPanel previewTab;
     private JPanel propertiesTab;
+
+    //bottom panel containing 4 buttons
+    private JPanel buttonsPanel;
     private JButton downloadButton;
     private JButton uploadButton;
     private JButton renameButton;
     private JButton deleteButton;
-    private JPanel buttonsPanel;
+
+    //list of files to be shown in listPanel
     private JList filesList;
     private String[] listOfFiles;
-    private JScrollBar scrollBar1;
+    private JScrollPane scrollBar1;
+
+    //top menu bar
     private JMenuBar topMenu;
     private JMenu fileMenu;
-    private JMenu toolsMenu;
     private JMenu helpMenu;
+
+    // these fields will be shown in properties tab of the selected file
     private JPanel propertiesPanel;
+
     private JLabel labelName;
     private JTextField nameField;
+
     private JLabel labelExt;
     private JTextField extField;
+
     private JLabel labelSize;
     private JTextField sizeField;
+
     private JLabel labelParts;
     private JTextField partsField;
+
     private JLabel labelDist;
     private JTextField distField;
+
     private JLabel labelOwner;
     private JTextField ownerField;
+
     private JLabel labelCreateDate;
     private JTextField createDateField;
+
     private JLabel labelAccess;
     private JTextField accessField;
+
+    //options to be shown in tools menu
     private JMenuItem fiRefresh;
     private JMenuItem fiExit;
 
-    public Graphix(int id){
-        this.id = id;
+
+    /**
+     *
+     * @param userId is a unique number given to each user from terminal
+     */
+    public Graphix(int userId){
+        //giving ports
+        this.id = userId;
         GUIPort = 12000 + id;
         frame = new JFrame();
-        frame.setTitle("" + id);
+        frame.setTitle("User: " + id);
+        //setting size of the application
         frame.setSize(900,600);
+
+        //initialization
         mainPanel = new JPanel(new BorderLayout());
         listPanel = new JPanel(new BorderLayout());
-        listPanel.setMinimumSize(new Dimension(500, 700));
+        listPanel.setMinimumSize(new Dimension(400, 600));
         filePanel = new JPanel(new BorderLayout());
 
         mainPanel.add(listPanel, BorderLayout.WEST);
         mainPanel.add(filePanel, BorderLayout.CENTER);
 
+
+        //properties panel set up
         labelName = new JLabel("File name: ");
         nameField = new JTextField("");
         nameField.setEditable(false);
@@ -106,8 +144,10 @@ public class Graphix {
         accessField = new JTextField("");
         accessField.setEditable(false);
 
+        //grid layout to show items properly
         propertiesPanel = new JPanel(new GridLayout(8,2));
         propertiesPanel.setMaximumSize(new Dimension(200,500));
+        //adding items to panel
         propertiesPanel.add(labelName);
         propertiesPanel.add(nameField);
         propertiesPanel.add(labelExt);
@@ -130,13 +170,11 @@ public class Graphix {
         fileTabs = new JTabbedPane();
         filePanel.add(fileTabs, BorderLayout.CENTER);
 
-        previewTab = new JPanel(new CardLayout());
+        //in order to switch between image preview and text preview
+        CardLayout cardLayout = new CardLayout();
+        previewTab = new JPanel(cardLayout);
         JPanel imageTab = new JPanel(new BorderLayout());
-        imageTab.add(new JLabel("imageTab"));
         JPanel textTab = new JPanel(new BorderLayout());
-        textTab.add(new JLabel("textTab"));
-        // TODO changeListener implemented in list
-
         previewTab.add(imageTab);
         previewTab.add(textTab);
         previewTab.setName("Preview");
@@ -149,40 +187,12 @@ public class Graphix {
         fileTabs.add(previewTab);
         fileTabs.add(propertiesTab);
 
+        //handling download
         downloadButton = new JButton("Download");
         downloadButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-/*
-                JFileChooser j = new JFileChooser();
-                // invoke the showsOpenDialog function to show the save dialog
-                int r = j.showSaveDialog(null);
-                // if the user selects a file
-                if (r == JFileChooser.APPROVE_OPTION)
-                {
-                    // set the label to the path of the selected file
-                    System.out.println("file path:"+ j.getSelectedFile().getName());
-                    System.out.println("user id :" + id);
-                    String fileName = j.getSelectedFile().getName();
-                    String userId = "" + id;
-                    Socket socketDownload = null;
-                    DataOutputStream out = null;
-                    try {
-                        socketDownload = new Socket("localhost", 9999);
-                        out = new DataOutputStream(socketDownload.getOutputStream());
-                    } catch (UnknownHostException e){} catch (IOException e){}
-                    String request = "download " + fileName + " " + userId;
-                    try {
-                        out.writeUTF(request);
-                        out.close();
-                        socketDownload.close();
-                    } catch (IOException e){}
-                }
-                // if the user cancelled the operation
-                else
-                    System.out.println("the user cancelled the operation");
-            }
-            */
+
                 if (filesList.getSelectedIndex() >= 0) {
 
                     JOptionPane.showMessageDialog(null, "File Downloaded successfully",
@@ -212,6 +222,8 @@ public class Graphix {
             }
         });
 
+
+        //handling upload
         uploadButton = new JButton("Upload");
         uploadButton.addActionListener(new ActionListener() {
             @Override
@@ -273,6 +285,8 @@ public class Graphix {
                     System.out.println("the user cancelled the operation");
             }
         });
+
+        //handling rename
         renameButton = new JButton("Rename");
         renameButton.addActionListener(new ActionListener() {
             @Override
@@ -351,6 +365,8 @@ public class Graphix {
 
             }
         });
+
+        //handling delete
         deleteButton = new JButton("Delete");
         deleteButton.addActionListener(new ActionListener() {
             @Override
@@ -406,11 +422,7 @@ public class Graphix {
             }
         });
 
-
-
-
-
-
+        //in order to show buttons in a line
         buttonsPanel = new JPanel(new FlowLayout());
         buttonsPanel.add(downloadButton);
         buttonsPanel.add(uploadButton);
@@ -418,25 +430,23 @@ public class Graphix {
         buttonsPanel.add(deleteButton);
         filePanel.add(buttonsPanel, BorderLayout.SOUTH);
 
+        //managing list of files
         filesList = new JList();
-        listOfFiles = new String[]{};//"Ubuntu.iso", "Movie.mp4", "test.txt", "q.txt"};
+        listOfFiles = new String[]{};
         filesList.setListData(listOfFiles);
-        //filesList.add
+
+        //handling when the user clicks on a list item
         filesList.addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent listSelectionEvent) {
 
                 if (!listSelectionEvent.getValueIsAdjusting()) {    //This line prevents double events
                     String selected = "";
-                    System.out.println("---------------------------------------------------------------------------------");
-                    for (String str : listOfFiles) {
-                        System.out.println(str);
-                    }
-                    System.out.println("---------------------------------------------------------------------------------");
 
                     try {
-                        if(filesList!= null && filesList.getSelectedValue().toString() != null){
+                        if(filesList!= null && filesList.getSelectedValue() != null){
                             selected = filesList.getSelectedValue().toString();
+
                             File current = new File(getDirectory(selected) + "/" + selected);
                             nameField.setText(current.getName());
                             extField.setText(getExt(current.getName()));
@@ -464,26 +474,57 @@ public class Graphix {
 
                     System.out.println(selected);
 
+                    if (extField.getText().equals("txt")||extField.getText().equals("docx")) {
+                        cardLayout.last(previewTab);
+                        String path = getDirectory(nameField.getText()) + "/" + nameField.getText();
+                        try {
+                            FileReader reader = new FileReader(path);
+                            BufferedReader bufferedReader = new BufferedReader(reader);
+
+                            JTextArea textArea= new JTextArea();
+                            textTab.add(textArea);
+                            textArea.read(bufferedReader,null);
+                            bufferedReader.close();
+                            textArea.requestFocus();
+                            textArea.setEditable(false);
+
+                        } catch (Exception e) {
+                            System.out.println("unable to locate text file for preview");
+                        }
+                    } else if (extField.getText().equals("jpg") || extField.getText().equals("png")) {
+                        cardLayout.first(previewTab);
+                        String path = getDirectory(nameField.getText())+"/" + nameField.getText();
+                        System.out.println(path);
+                        try {
+
+                            File file = new File(path);
+                            BufferedImage image = ImageIO.read(file);
+                            JLabel label = new JLabel(new ImageIcon(image));
+                            imageTab.add(label);
+                            label.requestFocus();
+                        } catch (Exception e) {
+                            System.out.println("unable to locate image file for preview");
+                        }
+                    }
                 }
             }
         });
+
         listPanel.add(filesList);
-        scrollBar1 = new JScrollBar();
+        scrollBar1 = new JScrollPane(filesList);
+        filesList.setFixedCellWidth(150);//preventing list from shrinking in width
         listPanel.add(scrollBar1, BorderLayout.WEST);
 
         topMenu = new JMenuBar();
-        fileMenu =  new JMenu("File");
+        fileMenu =  new JMenu("Tools");
         fiRefresh = new JMenuItem("Refresh List");
+
+        //manually refreshing list of files
         fiRefresh.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                //filesList.setListData(listOfFiles);
                 System.out.println("Refresh is selected");
 
-
-                //TODO *******************************************************************************
-                //TODO *******************************************************************************
-                //String[] list = {"a.txt", "b.mp4", "c.jpg", "d.zip"};
                 Socket socketList = null;
                 DataOutputStream outList = null;
                 try {
@@ -516,7 +557,7 @@ public class Graphix {
                 }catch (IOException e) {}
 
                 filesInfo.removeAll(filesInfo);
-
+                //updating file info
                 if(list.length() > 0) {
                     String[] splitterFiles = list.split("@");
                     for (String files : splitterFiles) {
@@ -534,20 +575,13 @@ public class Graphix {
                     }
                 }
 
-                //TODO *******************************************************************************
-                //TODO *******************************************************************************
                 String[] fileNames = new String[filesInfo.size()];
                 for (int i = 0; i < filesInfo.size(); i++){
                     fileNames[i] = filesInfo.get(i)[0];
                 }
 
-
                 filesList.setListData(fileNames);
                 listOfFiles = fileNames;
-                //System.out.println("x = " + list);
-
-
-
 
             }
         });
@@ -560,10 +594,9 @@ public class Graphix {
                 frame.dispose();
             }
         });
+
         fileMenu.add(fiExit);
         topMenu.add(fileMenu);
-        toolsMenu = new JMenu("Tools");
-        topMenu.add(toolsMenu);
         helpMenu =  new JMenu("Help");
         topMenu.add(helpMenu);
 
@@ -571,13 +604,12 @@ public class Graphix {
 
         frame.getContentPane().add(mainPanel);
         frame.setVisible(true);
-        // frame.pack();
         frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
     }
 
 
-
-    public String getOwner(String fileName){
+//private methods to get file attributes
+    private String getOwner(String fileName){
         for(String[] f : filesInfo){
             if (f[0].equals(fileName)){
                 return f[3];
@@ -586,7 +618,7 @@ public class Graphix {
         return "";
     }
 
-    public String getDistribution(String fileName){
+    private String getDistribution(String fileName){
         for(String[] f : filesInfo){
             if (f[0].equals(fileName)){
                 return f[2];
@@ -595,7 +627,7 @@ public class Graphix {
         return "";
     }
 
-    public String getDirectory(String fileName){
+    private String getDirectory(String fileName){
         for(String[] f : filesInfo){
             if (f[0].equals(fileName)){
                 return f[1];
@@ -604,34 +636,9 @@ public class Graphix {
         return "";
     }
 
-    public String getExt(String fileName) {
+    private String getExt(String fileName) {
         return fileName.split("\\.")[fileName.split("\\.").length -1];
     }
 
 
 }
-
-
-//
-//class GUIMessageReceiver extends Thread{
-//    private int port;
-//
-//    public GUIMessageReceiver(int port){
-//        this.port = port;
-//    }
-//    public void run(){
-//
-//        Socket guiSocket = null;
-//        ServerSocket guiSSocket = null;
-//        try {
-//            guiSSocket = new ServerSocket(port);
-//        } catch (IOException e) {}
-//        try {
-//            guiSocket = guiSSocket.accept();
-//        } catch (IOException e) {}
-//        try {
-//            DataInputStream in = new DataInputStream(guiSocket.getInputStream());
-//            String response = in.readUTF();
-//        }catch (IOException e) {}
-//    }
-//}

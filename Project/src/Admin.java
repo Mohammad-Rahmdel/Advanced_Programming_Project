@@ -113,7 +113,7 @@ public class Admin{
         downloadFormat = downloadFormat.substring(0,downloadFormat.length() - 1);   //omits the last ','
         if (cnt == numberOfParts)
             return "" + numberOfParts + "#" + downloadFormat;   // e.g. 3#1:2,2:3,3:5
-        // this indicates that our files has three part the peer number 2 should send part one and so on.
+            // this indicates that our files has three part the peer number 2 should send part one and so on.
         else
             return "failed";
     }
