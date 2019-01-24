@@ -1,7 +1,5 @@
 import javax.imageio.ImageIO;
 import javax.swing.*;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import java.awt.*;
@@ -10,7 +8,6 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -133,9 +130,7 @@ public class Graphix {
         CardLayout cardLayout = new CardLayout();
         previewTab = new JPanel(cardLayout);
         JPanel imageTab = new JPanel(new BorderLayout());
-        //imageTab.add(new JLabel("imageTab"));
         JPanel textTab = new JPanel(new BorderLayout());
-        //textTab.add(new JLabel("textTab"));
 
         previewTab.add(imageTab);
         previewTab.add(textTab);
@@ -153,36 +148,7 @@ public class Graphix {
         downloadButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-/*
-                JFileChooser j = new JFileChooser();
-                // invoke the showsOpenDialog function to show the save dialog
-                int r = j.showSaveDialog(null);
-                // if the user selects a file
-                if (r == JFileChooser.APPROVE_OPTION)
-                {
-                    // set the label to the path of the selected file
-                    System.out.println("file path:"+ j.getSelectedFile().getName());
-                    System.out.println("user id :" + id);
-                    String fileName = j.getSelectedFile().getName();
-                    String userId = "" + id;
-                    Socket socketDownload = null;
-                    DataOutputStream out = null;
-                    try {
-                        socketDownload = new Socket("localhost", 9999);
-                        out = new DataOutputStream(socketDownload.getOutputStream());
-                    } catch (UnknownHostException e){} catch (IOException e){}
-                    String request = "download " + fileName + " " + userId;
-                    try {
-                        out.writeUTF(request);
-                        out.close();
-                        socketDownload.close();
-                    } catch (IOException e){}
-                }
-                // if the user cancelled the operation
-                else
-                    System.out.println("the user cancelled the operation");
-            }
-            */
+
                 if (filesList.getSelectedIndex() >= 0) {
 
                     JOptionPane.showMessageDialog(null, "File Downloaded successfully",
@@ -428,15 +394,11 @@ public class Graphix {
 
                 if (!listSelectionEvent.getValueIsAdjusting()) {    //This line prevents double events
                     String selected = "";
-                    System.out.println("---------------------------------------------------------------------------------");
-                    for (String str : listOfFiles) {
-                        System.out.println(str);
-                    }
-                    System.out.println("---------------------------------------------------------------------------------");
 
                     try {
-                        if(filesList!= null && filesList.getSelectedValue().toString() != null){
+                        if(filesList!= null && filesList.getSelectedValue() != null){
                             selected = filesList.getSelectedValue().toString();
+
                             File current = new File(getDirectory(selected) + "/" + selected);
                             nameField.setText(current.getName());
                             extField.setText(getExt(current.getName()));
@@ -512,10 +474,6 @@ public class Graphix {
                 //filesList.setListData(listOfFiles);
                 System.out.println("Refresh is selected");
 
-
-                //TODO *******************************************************************************
-                //TODO *******************************************************************************
-                //String[] list = {"a.txt", "b.mp4", "c.jpg", "d.zip"};
                 Socket socketList = null;
                 DataOutputStream outList = null;
                 try {
@@ -566,8 +524,6 @@ public class Graphix {
                     }
                 }
 
-                //TODO *******************************************************************************
-                //TODO *******************************************************************************
                 String[] fileNames = new String[filesInfo.size()];
                 for (int i = 0; i < filesInfo.size(); i++){
                     fileNames[i] = filesInfo.get(i)[0];
@@ -603,13 +559,12 @@ public class Graphix {
 
         frame.getContentPane().add(mainPanel);
         frame.setVisible(true);
-        // frame.pack();
         frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
     }
 
 
 
-    public String getOwner(String fileName){
+    private String getOwner(String fileName){
         for(String[] f : filesInfo){
             if (f[0].equals(fileName)){
                 return f[3];
@@ -618,7 +573,7 @@ public class Graphix {
         return "";
     }
 
-    public String getDistribution(String fileName){
+    private String getDistribution(String fileName){
         for(String[] f : filesInfo){
             if (f[0].equals(fileName)){
                 return f[2];
@@ -627,7 +582,7 @@ public class Graphix {
         return "";
     }
 
-    public String getDirectory(String fileName){
+    private String getDirectory(String fileName){
         for(String[] f : filesInfo){
             if (f[0].equals(fileName)){
                 return f[1];
@@ -636,7 +591,7 @@ public class Graphix {
         return "";
     }
 
-    public String getExt(String fileName) {
+    private String getExt(String fileName) {
         return fileName.split("\\.")[fileName.split("\\.").length -1];
     }
 
